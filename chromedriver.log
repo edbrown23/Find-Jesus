@@ -1,0 +1,46 @@
+[0.001][INFO]:      ChromeDriver 22.0.1203.0 C:\Users\ebrown\Documents\GitHub\Find-Jesus\chromedriver.exe
+[1.051][FINE]:      Initializing session with capabilities {
+   "browserName": "chrome",
+   "chrome.switches": [  ],
+   "chromeOptions": {
+      "args": [  ],
+      "extensions": [  ]
+   },
+   "platform": "ANY",
+   "version": ""
+}
+
+[1.052][INFO]:      Launching chrome: "C:\Users\ebrown\AppData\Local\Google\Chrome\Application\chrome.exe" --disable-hang-monitor --disable-prompt-on-repost --dom-automation --full-memory-crash-report --no-default-browser-check --no-first-run --ignore-certificate-errors --disable-popup-blocking --homepage=about:blank
+[2.800][INFO]:      Connected to Chrome successfully. Version: 21.0.1180.60
+[2.839][FINE]:      Command received (/session/a861425bae3bcc07bd9d0f6f97971f74)
+[2.839][FINE]:      Command finished (/session/a861425bae3bcc07bd9d0f6f97971f74) with response {
+   "sessionId": "a861425bae3bcc07bd9d0f6f97971f74",
+   "status": 0,
+   "value": {
+      "acceptSslCerts": false,
+      "applicationCacheEnabled": false,
+      "browserConnectionEnabled": false,
+      "browserName": "chrome",
+      "chrome.chromedriverVersion": "22.0.1203.0",
+      "chrome.nativeEvents": false,
+      "cssSelectorsEnabled": true,
+      "databaseEnabled": false,
+      "handlesAlerts": true,
+      "javascriptEnabled": true,
+      "locationContextEnabled": false,
+      "nativeEvents": true,
+      "platform": "windows",
+      "rotatable": false,
+      "takesScreenshot": true,
+      "version": "21.0.1180.60",
+      "webStorageEnabled": true
+   }
+}
+
+[3.061][FINE]:      Command received (/session/a861425bae3bcc07bd9d0f6f97971f74/url) with params {
+   "url": "http://en.wikipedia.org/wiki/Main_Page"
+}
+
+[3.061][FINER]:     Waiting for all views to stop loading...
+[3.063][FINER]:     Done waiting for all views to stop loading
+[10.874][FINER]:    Waiting for all views to stop loading...
