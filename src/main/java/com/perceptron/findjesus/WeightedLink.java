@@ -1,7 +1,5 @@
 package com.perceptron.findjesus;
 
-import java.util.HashMap;
-
 /**
  * This software falls under the MIT license, as follows:
  * Copyright (C) 2012
@@ -22,26 +20,52 @@ import java.util.HashMap;
  * Created By: Eric Brown
  * Date: 8/8/12
  */
-public class WeightStorage {
-    private HashMap<String, Float> pageWeights;
+public class WeightedLink implements Comparable {
+    private String link;
+    private float weight;
 
-    public WeightStorage(){
-        pageWeights = new HashMap<String, Float>();
+    public WeightedLink(String link, float weight){
+        this.link = link;
+        this.weight = weight;
     }
 
-    public WeightStorage(HashMap<String, Float> oldWeights){
-        pageWeights = new HashMap<String, Float>(oldWeights);
+    @Override
+    public boolean equals(Object o){
+        if(!(o instanceof WeightedLink)){
+            throw new IllegalArgumentException("Can only compare to other WeightedLinks!");
+        }
+        WeightedLink w = (WeightedLink)o;
+        return (w.link.equals(link) && Math.abs(weight - w.weight) < 0.000001f);
     }
 
-    public boolean containsLink(String link){
-        return pageWeights.containsKey(link);
+    @Override
+    public int compareTo(Object o) {
+        if(!(o instanceof WeightedLink)){
+            throw new IllegalArgumentException("Can only compare to other WeightedLinks!");
+        }
+        WeightedLink w = (WeightedLink)o;
+        if(weight < w.weight){
+            return -1;
+        }else if(weight > w.weight){
+            return 1;
+        }else{
+            return 0;
+        }
     }
 
-    public float getPageWeight(String link){
-        return pageWeights.get(link);
+    public String getLink() {
+        return link;
     }
 
-    public void addLink(String link, float value){
-        pageWeights.put(link, value);
+    public void setLink(String link) {
+        this.link = link;
+    }
+
+    public float getWeight() {
+        return weight;
+    }
+
+    public void setWeight(float weight) {
+        this.weight = weight;
     }
 }
