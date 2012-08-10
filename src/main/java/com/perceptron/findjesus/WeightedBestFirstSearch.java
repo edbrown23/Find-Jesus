@@ -1,10 +1,12 @@
 package com.perceptron.findjesus;
 
 import org.cyberneko.html.HTMLScanner;
+import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.SimpleGraph;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
-import sun.management.GarbageCollectionNotifInfoCompositeData;
+import org.jgrapht.Graph;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,10 +41,13 @@ public class WeightedBestFirstSearch {
     /** A graylist of partial links which should probably be ignored in the search */
     private ArrayList<String> graylist;
 
+    private Graph<String, DefaultEdge> edgeGraph;
+
     public WeightedBestFirstSearch(WebDriver browser){
         this.browser = browser;
         blacklist = new ArrayList<String>();
         graylist = new ArrayList<String>();
+        edgeGraph = new SimpleGraph<String, DefaultEdge>(DefaultEdge.class);
         setupGrayList();
     }
 
@@ -84,6 +89,10 @@ public class WeightedBestFirstSearch {
                 }
             }
         }
+    }
+
+    private void weightModification(){
+
     }
 
     private ArrayList<String> getAllCurrentPageLinks(){

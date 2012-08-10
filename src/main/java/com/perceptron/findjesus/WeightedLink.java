@@ -23,6 +23,7 @@ package com.perceptron.findjesus;
 public class WeightedLink implements Comparable {
     private String link;
     private float weight;
+    private int distance;
 
     public WeightedLink(String link, float weight){
         this.link = link;
