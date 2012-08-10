@@ -80,7 +80,6 @@ public class WeightedBestFirstSearch {
                     }
                 }
                 if(!grayListed && !visitedLinks.contains(n) && Util.levenshteinDistance(n, currentNode.getLink()) > 5){
-                    // TODO factor in previous weight, if we've been here before on other runs
                     neighbors.add(new WeightedLink(n, 1.0f));
                 }
             }
