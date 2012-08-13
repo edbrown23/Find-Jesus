@@ -27,10 +27,12 @@ import org.openqa.selenium.htmlunit.HtmlUnitDriver;
 public class test {
     public static void main(String[] args){
         WebDriver browser = new HtmlUnitDriver();
-        Util.navigateToWikipedia(browser);
-        Util.goToRandomArticle(browser);
         WeightedBestFirstSearch search = new WeightedBestFirstSearch(browser);
-        search.runSearch();
+        for(int i = 0; i < 5; i++){
+            Util.navigateToWikipedia(browser);
+            Util.goToRandomArticle(browser);
+            search.runSearch();
+        }
         browser.quit();
     }
 }

@@ -1,7 +1,8 @@
 package com.perceptron.findjesus;
 
-import org.cyberneko.html.HTMLScanner;
+import org.jgrapht.alg.DijkstraShortestPath;
 import org.jgrapht.graph.DefaultEdge;
+import org.jgrapht.graph.DefaultWeightedEdge;
 import org.jgrapht.graph.SimpleGraph;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -41,13 +42,16 @@ public class WeightedBestFirstSearch {
     /** A graylist of partial links which should probably be ignored in the search */
     private ArrayList<String> graylist;
 
-    private Graph<String, DefaultEdge> edgeGraph;
+    private Graph<WeightedLink,DefaultWeightedEdge> edgeGraph;
+
+    private WeightStorage weightStorage;
 
     public WeightedBestFirstSearch(WebDriver browser){
+        weightStorage = new WeightStorage();
         this.browser = browser;
         blacklist = new ArrayList<String>();
         graylist = new ArrayList<String>();
-        edgeGraph = new SimpleGraph<String, DefaultEdge>(DefaultEdge.class);
+        edgeGraph = new SimpleGraph<WeightedLink, DefaultWeightedEdge>(DefaultWeightedEdge.class);
         setupGrayList();
     }
 
@@ -59,14 +63,24 @@ public class WeightedBestFirstSearch {
         graylist.add("Special:");
         graylist.add("Wikipedia:");
         graylist.add("Template:");
+        graylist.add("Portal:");
+        graylist.add("Template_talk:");
+        graylist.add("Category:");
+        graylist.add("#");
+
     }
 
     public void runSearch(){
+        int visitCount = 0;
         ArrayList<String> visitedLinks = new ArrayList<String>();
         PriorityQueue<WeightedLink> neighbors = new PriorityQueue<WeightedLink>();
-        WeightedLink currentNode = new WeightedLink(browser.getCurrentUrl(), 1.0f);
+        WeightedLink currentNode = new WeightedLink(browser.getCurrentUrl(), 1.0f, 0); // The start link has a distance of 0
         neighbors.add(currentNode);
+        edgeGraph.addVertex(currentNode);
+        WeightedLink start = currentNode;
+        WeightedLink goal = new WeightedLink(jesusURL, 100.0f, 0);
         while(neighbors.size() > 0){
+            visitCount++;
             currentNode = neighbors.poll();
             browser.get(currentNode.getLink());
             System.out.println("Currently on page " + currentNode.getLink());
@@ -85,14 +99,34 @@ public class WeightedBestFirstSearch {
                     }
                 }
                 if(!grayListed && !visitedLinks.contains(n) && Util.levenshteinDistance(n, currentNode.getLink()) > 5){
-                    neighbors.add(new WeightedLink(n, 1.0f));
+                    float weight = 1.0f;
+                    if(weightStorage.containsLink(n)){
+                        weight = weightStorage.getPageWeight(n);
+                    }
+                    WeightedLink neighbor = new WeightedLink(n, weight, currentNode.getDistance() + 1);
+                    neighbors.add(neighbor);
+                    edgeGraph.addVertex(neighbor);
+                    edgeGraph.addEdge(currentNode, neighbor, new DefaultWeightedEdge());
                 }
             }
         }
+        System.out.println("Visited " + visitCount + " total links");
+        // Once we get to here, we've found Jesus, so run the modifications
+        weightModification(edgeGraph, shortestPath(edgeGraph, start, goal));
     }
 
-    private void weightModification(){
+    private List<DefaultWeightedEdge> shortestPath(Graph<WeightedLink, DefaultWeightedEdge> graph, WeightedLink start, WeightedLink goal){
+        // wrapper method for now, a specialized shortest path method will probably have to me made here
+        return DijkstraShortestPath.findPathBetween(graph, start, goal);
+    }
 
+    private void weightModification(Graph<WeightedLink, DefaultWeightedEdge> graph, List<DefaultWeightedEdge> path){
+        for(DefaultWeightedEdge edge : path){
+            WeightedLink p = graph.getEdgeSource(edge);
+            WeightedLink t = graph.getEdgeTarget(edge);
+            weightStorage.addLink(p.getLink(), 2.0f);
+            weightStorage.addLink(t.getLink(), 2.0f);
+        }
     }
 
     private ArrayList<String> getAllCurrentPageLinks(){
