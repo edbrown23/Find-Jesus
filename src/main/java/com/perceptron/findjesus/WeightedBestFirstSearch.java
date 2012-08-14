@@ -12,6 +12,7 @@ import org.jgrapht.Graph;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 /**
  * This software falls under the MIT license, as follows:
@@ -67,19 +68,28 @@ public class WeightedBestFirstSearch {
         graylist.add("Template_talk:");
         graylist.add("Category:");
         graylist.add("#");
-
+        graylist.add("Help:");
     }
 
     public void runSearch(){
         int visitCount = 0;
+        boolean givingUp = false;
         ArrayList<String> visitedLinks = new ArrayList<String>();
         PriorityQueue<WeightedLink> neighbors = new PriorityQueue<WeightedLink>();
         WeightedLink currentNode = new WeightedLink(browser.getCurrentUrl(), 1.0f, 0); // The start link has a distance of 0
+        WeightedLink goal = new WeightedLink(jesusURL, 100.0f, 0);
         neighbors.add(currentNode);
         edgeGraph.addVertex(currentNode);
         WeightedLink start = currentNode;
-        WeightedLink goal = new WeightedLink(jesusURL, 100.0f, 0);
+        System.out.println("Starting at: " + start.getLink());
+        weightStorage.addLink(jesusURL, 100.0f);
         while(neighbors.size() > 0){
+            if(visitCount > 100){
+                System.out.println("Working too hard, giving up!");
+                givingUp = true;
+                break;
+            }
+            //System.out.println(neighbors.size());
             visitCount++;
             currentNode = neighbors.poll();
             browser.get(currentNode.getLink());
@@ -87,9 +97,11 @@ public class WeightedBestFirstSearch {
             visitedLinks.add(currentNode.getLink());
             if(currentNode.getLink().equals(jesusURL)){
                 System.out.println("Found Jesus!");
+                goal = currentNode;
                 break;
             }
             ArrayList<String> currentNeighbors = getAllCurrentPageLinks();
+            ArrayList<String> currentPageAdditions = new ArrayList<String>();
             for(String n : currentNeighbors){
                 boolean grayListed = false;
                 for(String l : graylist){
@@ -98,34 +110,71 @@ public class WeightedBestFirstSearch {
                         break;
                     }
                 }
-                if(!grayListed && !visitedLinks.contains(n) && Util.levenshteinDistance(n, currentNode.getLink()) > 5){
+                if(!grayListed && !visitedLinks.contains(n) && !currentPageAdditions.contains(n) && Util.levenshteinDistance(n, currentNode.getLink()) > 5){
                     float weight = 1.0f;
                     if(weightStorage.containsLink(n)){
                         weight = weightStorage.getPageWeight(n);
                     }
                     WeightedLink neighbor = new WeightedLink(n, weight, currentNode.getDistance() + 1);
-                    neighbors.add(neighbor);
-                    edgeGraph.addVertex(neighbor);
-                    edgeGraph.addEdge(currentNode, neighbor, new DefaultWeightedEdge());
+                    if(!neighbors.contains(neighbor)){
+                        neighbors.add(neighbor);
+                        currentPageAdditions.add(n);
+                        edgeGraph.addVertex(neighbor);
+                        edgeGraph.addEdge(currentNode, neighbor, new DefaultWeightedEdge());
+                    }
                 }
             }
         }
         System.out.println("Visited " + visitCount + " total links");
         // Once we get to here, we've found Jesus, so run the modifications
-        weightModification(edgeGraph, shortestPath(edgeGraph, start, goal));
+        //weightModification(edgeGraph, shortestPath(edgeGraph, start, goal));
+        if(!givingUp){
+            simpleWeightMod(edgeGraph, visitedLinks);
+        }else{
+            failureMod(edgeGraph, visitedLinks);
+        }
     }
 
     private List<DefaultWeightedEdge> shortestPath(Graph<WeightedLink, DefaultWeightedEdge> graph, WeightedLink start, WeightedLink goal){
-        // wrapper method for now, a specialized shortest path method will probably have to me made here
-        return DijkstraShortestPath.findPathBetween(graph, start, goal);
+        Set<DefaultWeightedEdge> edgeSet = graph.getAllEdges(start, goal);
+
+        return (List<DefaultWeightedEdge>)edgeSet;
     }
 
-    private void weightModification(Graph<WeightedLink, DefaultWeightedEdge> graph, List<DefaultWeightedEdge> path){
+    private void simpleWeightMod(Graph<WeightedLink, DefaultWeightedEdge> graph, ArrayList<String> links){
+        for(String link : links){
+            float weight = 2.0f + weightStorage.getPageWeight(link);
+            weightStorage.addLink(link, weight);
+            Set<DefaultWeightedEdge> neighbors = graph.edgesOf(new WeightedLink(link, 0.0f, 0));
+            for(DefaultWeightedEdge edge : neighbors){
+                WeightedLink n = graph.getEdgeTarget(edge);
+                weight = (weight / 4) + weightStorage.getPageWeight(n.getLink());
+                weightStorage.addLink(n.getLink(), weight);
+            }
+        }
+    }
+
+    private void failureMod(Graph<WeightedLink, DefaultWeightedEdge> graph, ArrayList<String> links){
+        for(String link : links){
+            float weight = (1.0f + weightStorage.getPageWeight(link)) / 2.0f;
+            weightStorage.addLink(link, weight);
+            Set<DefaultWeightedEdge> neighbors = graph.edgesOf(new WeightedLink(link, 0.0f, 0));
+            for(DefaultWeightedEdge edge : neighbors){
+                WeightedLink n = graph.getEdgeTarget(edge);
+                weight = (weight / 4) - weightStorage.getPageWeight(n.getLink());
+                weightStorage.addLink(n.getLink(), weight);
+            }
+        }
+    }
+
+    private void weightModification(Graph<WeightedLink, DefaultWeightedEdge> graph, ArrayList<DefaultWeightedEdge> path){
         for(DefaultWeightedEdge edge : path){
             WeightedLink p = graph.getEdgeSource(edge);
             WeightedLink t = graph.getEdgeTarget(edge);
-            weightStorage.addLink(p.getLink(), 2.0f);
-            weightStorage.addLink(t.getLink(), 2.0f);
+            float newWeight = 2.0f + weightStorage.getPageWeight(p.getLink());
+            weightStorage.addLink(p.getLink(), newWeight);
+            newWeight = 2.0f + weightStorage.getPageWeight(t.getLink());
+            weightStorage.addLink(t.getLink(), newWeight);
         }
     }
 

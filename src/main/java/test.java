@@ -28,7 +28,7 @@ public class test {
     public static void main(String[] args){
         WebDriver browser = new HtmlUnitDriver();
         WeightedBestFirstSearch search = new WeightedBestFirstSearch(browser);
-        for(int i = 0; i < 5; i++){
+        for(int i = 0; i < 15; i++){
             Util.navigateToWikipedia(browser);
             Util.goToRandomArticle(browser);
             search.runSearch();

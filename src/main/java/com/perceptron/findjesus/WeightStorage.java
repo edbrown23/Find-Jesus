@@ -38,7 +38,11 @@ public class WeightStorage {
     }
 
     public float getPageWeight(String link){
-        return pageWeights.get(link);
+        if(pageWeights.get(link) == null){
+            return 0;
+        }else{
+            return pageWeights.get(link);
+        }
     }
 
     public void addLink(String link, float value){

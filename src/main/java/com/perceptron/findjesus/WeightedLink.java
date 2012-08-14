@@ -37,7 +37,13 @@ public class WeightedLink implements Comparable {
             throw new IllegalArgumentException("Can only compare to other WeightedLinks!");
         }
         WeightedLink w = (WeightedLink)o;
-        return (w.link.equals(link) && Math.abs(weight - w.weight) < 0.000001f);
+        //return (w.link.equals(link) && Math.abs(weight - w.weight) < 0.000001f);
+        return w.link.equals(this.link);
+    }
+
+    @Override
+    public int hashCode(){
+        return link.hashCode();
     }
 
     @Override
@@ -47,9 +53,9 @@ public class WeightedLink implements Comparable {
         }
         WeightedLink w = (WeightedLink)o;
         if(weight < w.weight){
-            return -1;
-        }else if(weight > w.weight){
             return 1;
+        }else if(weight > w.weight){
+            return -1;
         }else{
             return 0;
         }
