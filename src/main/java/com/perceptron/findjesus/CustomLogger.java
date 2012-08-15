@@ -1,9 +1,6 @@
-import com.perceptron.findjesus.CustomLogger;
-import com.perceptron.findjesus.Util;
-import com.perceptron.findjesus.WeightedBestFirstSearch;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.htmlunit.HtmlUnitDriver;
+package com.perceptron.findjesus;
+
+import java.io.*;
 
 /**
  * This software falls under the MIT license, as follows:
@@ -23,19 +20,27 @@ import org.openqa.selenium.htmlunit.HtmlUnitDriver;
  * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  * <p/>
  * Created By: Eric Brown
- * Date: 8/8/12
+ * Date: 8/15/12
  */
-public class test {
-    public static void main(String[] args){
-        CustomLogger.setupLogger("log.txt");
-        WebDriver browser = new HtmlUnitDriver();
-        WeightedBestFirstSearch search = new WeightedBestFirstSearch(browser);
-        for(int i = 0; i < 15; i++){
-            Util.navigateToWikipedia(browser);
-            Util.goToRandomArticle(browser);
-            search.runSearch();
+public class CustomLogger {
+    private static PrintWriter output;
+
+    public static void setupLogger(String fileLocation){
+        try {
+            output = new PrintWriter(new FileWriter(new File(fileLocation)));
+        } catch (FileNotFoundException e) {
+            System.err.println("Could not find the file at location = " + fileLocation);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        browser.quit();
-        CustomLogger.close();
+    }
+
+    public static void logMessage(String text){
+        output.println(text);
+        System.out.println(text);
+    }
+
+    public static void close(){
+        output.close();
     }
 }
