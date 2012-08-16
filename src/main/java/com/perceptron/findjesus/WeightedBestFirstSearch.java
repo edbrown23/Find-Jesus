@@ -172,7 +172,9 @@ public class WeightedBestFirstSearch {
                 for(DefaultWeightedEdge edge : neighbors){
                     WeightedLink n = graph.getEdgeTarget(edge);
                     float neighborWeight = (weight / 2) + weightStorage.getPageWeight(n.getLink());
-                    weightStorage.addLink(n.getLink(), neighborWeight);
+                    if(Math.abs(neighborWeight) > 0.00001){
+                        weightStorage.addLink(n.getLink(), neighborWeight);
+                    }
                 }
             }
         }
@@ -187,7 +189,9 @@ public class WeightedBestFirstSearch {
                 for(DefaultWeightedEdge edge : neighbors){
                     WeightedLink n = graph.getEdgeTarget(edge);
                     float neighborWeight = (weight / 4) - weightStorage.getPageWeight(n.getLink());
-                    weightStorage.addLink(n.getLink(), neighborWeight);
+                    if(Math.abs(neighborWeight) > 0.00001){
+                        weightStorage.addLink(n.getLink(), neighborWeight);
+                    }
                 }
             }
         }
