@@ -1,6 +1,10 @@
 package com.perceptron.findjesus;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 import java.util.HashMap;
+import java.util.Scanner;
 
 /**
  * This software falls under the MIT license, as follows:
@@ -47,5 +51,31 @@ public class WeightStorage {
 
     public void addLink(String link, float value){
         pageWeights.put(link, value);
+    }
+
+    public void saveStorage(String fileLoc){
+        try {
+            PrintWriter output = new PrintWriter(new File(fileLoc));
+            for(String url : pageWeights.keySet()){
+                String weight = Float.toString(pageWeights.get(url));
+                output.println(url + "\t" + weight);
+            }
+            output.close();
+        } catch (FileNotFoundException e) {
+            System.err.println("Could not find the file specified with name = " + fileLoc);
+        }
+    }
+
+    public void loadStorage(String fileLoc){
+        try {
+            Scanner input = new Scanner(new File(fileLoc));
+            while(input.hasNext()){
+                String items[] = input.nextLine().split("\t");
+                pageWeights.put(items[0], Float.parseFloat(items[1]));
+            }
+            input.close();
+        } catch (FileNotFoundException e) {
+            System.err.println("Could not find the file specified with name = " + fileLoc);
+        }
     }
 }

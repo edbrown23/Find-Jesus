@@ -34,6 +34,7 @@ import java.util.*;
 public class WeightedBestFirstSearch {
     /** The goal of the search */
     private String jesusURL = "http://en.wikipedia.org/wiki/Jesus";
+    private String baseURL = "http://en.wikipedia.org/wiki";
     private WebDriver browser;
     /** A blacklist of links which should be ignored in the search */
     private ArrayList<String> blacklist;
@@ -132,9 +133,16 @@ public class WeightedBestFirstSearch {
             ArrayList<WeightedLink> path = shortestPath(edgeGraph, start, goal);
             simpleWeightMod(edgeGraph, path);
             CustomLogger.logMessage("Shortest path contains " + path.size() + " links!");
+            weightStorage.saveStorage(getFilePath());
+            weightStorage.loadStorage(getFilePath());
         }else{
-            failureMod(edgeGraph, visitedLinks);
+            //failureMod(edgeGraph, visitedLinks);
         }
+    }
+
+    private String getFilePath(){
+        String portions[] = jesusURL.split("/");
+        return portions[portions.length - 1] + ".csv";
     }
 
     private ArrayList<WeightedLink> shortestPath(Graph<WeightedLink, DefaultWeightedEdge> graph, WeightedLink start, WeightedLink goal){
@@ -157,26 +165,30 @@ public class WeightedBestFirstSearch {
     private void simpleWeightMod(Graph<WeightedLink, DefaultWeightedEdge> graph, ArrayList<WeightedLink> links){
         for(int i = 0; i < links.size(); i++){
             // We want to weight heavier those links that are close to the goal
-            float weight = (2.0f * ((links.size() - i) / links.size())) + weightStorage.getPageWeight(links.get(i).getLink());
-            weightStorage.addLink(links.get(i).getLink(), weight);
-            Set<DefaultWeightedEdge> neighbors = graph.edgesOf(links.get(i));
-            for(DefaultWeightedEdge edge : neighbors){
-                WeightedLink n = graph.getEdgeTarget(edge);
-                weight = (weight / 4) + weightStorage.getPageWeight(n.getLink());
-                weightStorage.addLink(n.getLink(), weight);
+            float weight = ((float)links.size() * ((float)(links.size() - i) / (float)links.size())) + weightStorage.getPageWeight(links.get(i).getLink());
+            if(Math.abs(weight) > 0.00001){
+                weightStorage.addLink(links.get(i).getLink(), weight);
+                Set<DefaultWeightedEdge> neighbors = graph.edgesOf(links.get(i));
+                for(DefaultWeightedEdge edge : neighbors){
+                    WeightedLink n = graph.getEdgeTarget(edge);
+                    float neighborWeight = (weight / 2) + weightStorage.getPageWeight(n.getLink());
+                    weightStorage.addLink(n.getLink(), neighborWeight);
+                }
             }
         }
     }
 
     private void failureMod(Graph<WeightedLink, DefaultWeightedEdge> graph, ArrayList<String> links){
         for(String link : links){
-            float weight = (1.0f + weightStorage.getPageWeight(link)) / 2.0f;
-            weightStorage.addLink(link, weight);
-            Set<DefaultWeightedEdge> neighbors = graph.edgesOf(new WeightedLink(link, 0.0f, 0));
-            for(DefaultWeightedEdge edge : neighbors){
-                WeightedLink n = graph.getEdgeTarget(edge);
-                weight = (weight / 4) - weightStorage.getPageWeight(n.getLink());
-                weightStorage.addLink(n.getLink(), weight);
+            float weight = (weightStorage.getPageWeight(link)) / 2.0f;
+            if(Math.abs(weight) > 0.00001){
+                weightStorage.addLink(link, weight);
+                Set<DefaultWeightedEdge> neighbors = graph.edgesOf(new WeightedLink(link, 0.0f, 0));
+                for(DefaultWeightedEdge edge : neighbors){
+                    WeightedLink n = graph.getEdgeTarget(edge);
+                    float neighborWeight = (weight / 4) - weightStorage.getPageWeight(n.getLink());
+                    weightStorage.addLink(n.getLink(), neighborWeight);
+                }
             }
         }
     }
@@ -202,7 +214,7 @@ public class WeightedBestFirstSearch {
             String link = current.getAttribute("href");
             if(link != null){
                 // We only accept links that keep us on wikipedia
-                if(link.contains("http://en.wikipedia.org/wiki")){
+                if(link.contains(baseURL)){
                     links.add(link);
                 }
             }
