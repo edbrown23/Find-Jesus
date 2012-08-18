@@ -47,6 +47,7 @@ public class WeightedBestFirstSearch {
 
     public WeightedBestFirstSearch(WebDriver browser){
         weightStorage = new WeightStorage();
+        weightStorage.loadStorage(getFilePath());
         this.browser = browser;
         blacklist = new ArrayList<String>();
         graylist = new ArrayList<String>();
@@ -125,6 +126,7 @@ public class WeightedBestFirstSearch {
                     }
                 }
             }
+            truncateNeighbors(neighbors, 100);
         }
         CustomLogger.logMessage("Visited " + visitCount + " total links");
         // Once we get to here, we've found Jesus, so run the modifications
@@ -136,7 +138,17 @@ public class WeightedBestFirstSearch {
             weightStorage.saveStorage(getFilePath());
             weightStorage.loadStorage(getFilePath());
         }else{
-            //failureMod(edgeGraph, visitedLinks);
+            failureMod(edgeGraph, visitedLinks);
+        }
+    }
+
+    private void truncateNeighbors(PriorityQueue<WeightedLink> neighbors, int size){
+        if(neighbors.size() > size){
+            WeightedLink links[] = neighbors.toArray(new WeightedLink[1]);
+            Arrays.sort(links);
+            for(int i = (size - 1); i < links.length; i++){
+                neighbors.remove(links[i]);
+            }
         }
     }
 
@@ -165,17 +177,18 @@ public class WeightedBestFirstSearch {
     private void simpleWeightMod(Graph<WeightedLink, DefaultWeightedEdge> graph, ArrayList<WeightedLink> links){
         for(int i = 0; i < links.size(); i++){
             // We want to weight heavier those links that are close to the goal
-            float weight = ((float)links.size() * ((float)(links.size() - i) / (float)links.size())) + weightStorage.getPageWeight(links.get(i).getLink());
+            float expFactor = (float)Math.pow(Math.E, (float)(-1 * links.size()) / 8);
+            float weight = (float)(links.size() - i) * expFactor + weightStorage.getPageWeight(links.get(i).getLink());
             if(Math.abs(weight) > 0.00001){
                 weightStorage.addLink(links.get(i).getLink(), weight);
-                Set<DefaultWeightedEdge> neighbors = graph.edgesOf(links.get(i));
-                for(DefaultWeightedEdge edge : neighbors){
-                    WeightedLink n = graph.getEdgeTarget(edge);
-                    float neighborWeight = (weight / 2) + weightStorage.getPageWeight(n.getLink());
-                    if(Math.abs(neighborWeight) > 0.00001){
-                        weightStorage.addLink(n.getLink(), neighborWeight);
-                    }
-                }
+//                Set<DefaultWeightedEdge> neighbors = graph.edgesOf(links.get(i));
+//                for(DefaultWeightedEdge edge : neighbors){
+//                    WeightedLink n = graph.getEdgeTarget(edge);
+//                    float neighborWeight = (weight / 2) + weightStorage.getPageWeight(n.getLink());
+//                    if(Math.abs(neighborWeight) > 0.00001){
+//                        weightStorage.addLink(n.getLink(), neighborWeight);
+//                    }
+//                }
             }
         }
     }
@@ -185,26 +198,15 @@ public class WeightedBestFirstSearch {
             float weight = (weightStorage.getPageWeight(link)) / 2.0f;
             if(Math.abs(weight) > 0.00001){
                 weightStorage.addLink(link, weight);
-                Set<DefaultWeightedEdge> neighbors = graph.edgesOf(new WeightedLink(link, 0.0f, 0));
-                for(DefaultWeightedEdge edge : neighbors){
-                    WeightedLink n = graph.getEdgeTarget(edge);
-                    float neighborWeight = (weight / 4) - weightStorage.getPageWeight(n.getLink());
-                    if(Math.abs(neighborWeight) > 0.00001){
-                        weightStorage.addLink(n.getLink(), neighborWeight);
-                    }
-                }
+//                Set<DefaultWeightedEdge> neighbors = graph.edgesOf(new WeightedLink(link, 0.0f, 0));
+//                for(DefaultWeightedEdge edge : neighbors){
+//                    WeightedLink n = graph.getEdgeTarget(edge);
+//                    float neighborWeight = weightStorage.getPageWeight(n.getLink()) - (weight / 4);
+//                    if(Math.abs(neighborWeight) > 0.00001){
+//                        weightStorage.addLink(n.getLink(), neighborWeight);
+//                    }
+//                }
             }
-        }
-    }
-
-    private void weightModification(Graph<WeightedLink, DefaultWeightedEdge> graph, ArrayList<DefaultWeightedEdge> path){
-        for(DefaultWeightedEdge edge : path){
-            WeightedLink p = graph.getEdgeSource(edge);
-            WeightedLink t = graph.getEdgeTarget(edge);
-            float newWeight = 2.0f + weightStorage.getPageWeight(p.getLink());
-            weightStorage.addLink(p.getLink(), newWeight);
-            newWeight = 2.0f + weightStorage.getPageWeight(t.getLink());
-            weightStorage.addLink(t.getLink(), newWeight);
         }
     }
 

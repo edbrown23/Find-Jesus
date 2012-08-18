@@ -30,7 +30,7 @@ public class test {
         CustomLogger.setupLogger("log.txt");
         WebDriver browser = new HtmlUnitDriver();
         WeightedBestFirstSearch search = new WeightedBestFirstSearch(browser);
-        for(int i = 0; i < 15; i++){
+        for(int i = 0; i < 25; i++){
             Util.navigateToWikipedia(browser);
             Util.goToRandomArticle(browser);
             search.runSearch();
