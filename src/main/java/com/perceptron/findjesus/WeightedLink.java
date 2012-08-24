@@ -24,11 +24,16 @@ public class WeightedLink implements Comparable {
     private String link;
     private float weight;
     private int distance;
+    private TreeNode node;
 
     public WeightedLink(String link, float weight, int distance){
         this.link = link;
         this.weight = weight;
         this.distance = distance;
+    }
+
+    public void setTreeNode(TreeNode node){
+        this.node = node;
     }
 
     @Override
@@ -83,5 +88,9 @@ public class WeightedLink implements Comparable {
 
     public void setDistance(int distance) {
         this.distance = distance;
+    }
+
+    public TreeNode getNode() {
+        return node;
     }
 }

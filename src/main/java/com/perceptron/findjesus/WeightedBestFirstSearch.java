@@ -41,9 +41,9 @@ public class WeightedBestFirstSearch {
     /** A graylist of partial links which should probably be ignored in the search */
     private ArrayList<String> graylist;
 
-    private Graph<WeightedLink,DefaultWeightedEdge> edgeGraph;
-
     private WeightStorage weightStorage;
+
+    private TreeNode startNode;
 
     public WeightedBestFirstSearch(WebDriver browser){
         weightStorage = new WeightStorage();
@@ -73,26 +73,37 @@ public class WeightedBestFirstSearch {
         int visitCount = 0;
         boolean givingUp = false;
         int maxDistance = 0;
+
         ArrayList<String> visitedLinks = new ArrayList<String>();
         PriorityQueue<WeightedLink> neighbors = new PriorityQueue<WeightedLink>();
-        edgeGraph = new SimpleGraph<WeightedLink, DefaultWeightedEdge>(DefaultWeightedEdge.class);
+        ArrayList<String> currentPageAdditions = new ArrayList<String>();
+        ArrayList<String> currentNeighbors = new ArrayList<String>();
+
         WeightedLink currentNode = new WeightedLink(browser.getCurrentUrl(), 1.0f, 0); // The start link has a distance of 0
+        WeightedLink lastNode;
+        startNode = new TreeNode(null, 0, browser.getCurrentUrl());
+        currentNode.setTreeNode(startNode);
+
         WeightedLink goal = new WeightedLink(jesusURL, 100.0f, 0);
         neighbors.add(currentNode);
-        edgeGraph.addVertex(currentNode);
         WeightedLink start = currentNode;
         CustomLogger.logMessage("Starting at: " + start.getLink());
-        weightStorage.addLink(jesusURL, 100.0f);
+
+        if(!weightStorage.containsLink(jesusURL)){
+            weightStorage.addLink(jesusURL, 100.0f);
+        }
+
         while(neighbors.size() > 0){
             if(visitCount > 100){
                 CustomLogger.logMessage("Working too hard, giving up!");
                 givingUp = true;
                 break;
             }
-            //System.out.println(neighbors.size());
             visitCount++;
             maxDistance = currentNode.getDistance();
+            lastNode = currentNode;
             currentNode = neighbors.poll();
+            currentNode.setTreeNode(new TreeNode(lastNode.getNode(), lastNode.getDistance() + 1, currentNode.getLink()));
             browser.get(currentNode.getLink());
             CustomLogger.logMessage("Currently on page " + currentNode.getLink());
             visitedLinks.add(currentNode.getLink());
@@ -102,8 +113,9 @@ public class WeightedBestFirstSearch {
                 goal.setDistance(maxDistance + 1);
                 break;
             }
-            ArrayList<String> currentNeighbors = getAllCurrentPageLinks();
-            ArrayList<String> currentPageAdditions = new ArrayList<String>();
+            currentNeighbors.clear();
+            currentPageAdditions.clear();
+            getAllCurrentPageLinks(currentNeighbors);
             for(String n : currentNeighbors){
                 boolean grayListed = false;
                 for(String l : graylist){
@@ -112,7 +124,7 @@ public class WeightedBestFirstSearch {
                         break;
                     }
                 }
-                if(!grayListed && !visitedLinks.contains(n) && !currentPageAdditions.contains(n) && Util.levenshteinDistance(n, currentNode.getLink()) > 5){
+                if(!grayListed  && !visitedLinks.contains(n) && !currentPageAdditions.contains(n) && Util.levenshteinDistance(n, currentNode.getLink()) > 5){
                     float weight = 1.0f;
                     if(weightStorage.containsLink(n)){
                         weight = weightStorage.getPageWeight(n);
@@ -121,8 +133,7 @@ public class WeightedBestFirstSearch {
                     if(!neighbors.contains(neighbor)){
                         neighbors.add(neighbor);
                         currentPageAdditions.add(n);
-                        edgeGraph.addVertex(neighbor);
-                        edgeGraph.addEdge(currentNode, neighbor, new DefaultWeightedEdge());
+                        currentNode.getNode().addChild(new TreeNode(currentNode.getNode(), currentNode.getNode().getDistanceFromStart() + 1, neighbor.getLink()));
                     }
                 }
             }
@@ -130,15 +141,14 @@ public class WeightedBestFirstSearch {
         }
         CustomLogger.logMessage("Visited " + visitCount + " total links");
         // Once we get to here, we've found Jesus, so run the modifications
-        //weightModification(edgeGraph, shortestPath(edgeGraph, start, goal));
         if(!givingUp){
-            ArrayList<WeightedLink> path = shortestPath(edgeGraph, start, goal);
-            simpleWeightMod(edgeGraph, path);
+            ArrayList<String> path = shortestPath(start.getNode(), goal.getNode());
+            simpleWeightMod(path);
             CustomLogger.logMessage("Shortest path contains " + path.size() + " links!");
             weightStorage.saveStorage(getFilePath());
             weightStorage.loadStorage(getFilePath());
         }else{
-            failureMod(edgeGraph, visitedLinks);
+            failureMod(visitedLinks);
         }
     }
 
@@ -157,65 +167,43 @@ public class WeightedBestFirstSearch {
         return portions[portions.length - 1] + ".csv";
     }
 
-    private ArrayList<WeightedLink> shortestPath(Graph<WeightedLink, DefaultWeightedEdge> graph, WeightedLink start, WeightedLink goal){
-        ArrayList<WeightedLink> path = new ArrayList<WeightedLink>();
-        WeightedLink currentNode = goal;
-        while(!currentNode.equals(start)){
-            path.add(currentNode);
-            Set<DefaultWeightedEdge> edges = graph.edgesOf(currentNode);
-            for(DefaultWeightedEdge edge : edges){
-                if(graph.getEdgeSource(edge).getDistance() == (currentNode.getDistance() - 1)){
-                    currentNode = graph.getEdgeSource(edge);
-                    break;
-                }
-            }
+    private ArrayList<String> shortestPath(TreeNode start, TreeNode goal){
+        ArrayList<String> path = new ArrayList<String>();
+        TreeNode currentNode = goal;
+        // TODO implement equals to get rid of this
+        while(!currentNode.getName().equals(start.getName())){
+            path.add(currentNode.getName());
+            currentNode = currentNode.getParent();
         }
-        path.add(currentNode);
+        path.add(currentNode.getName());
         return path;
     }
 
-    private void simpleWeightMod(Graph<WeightedLink, DefaultWeightedEdge> graph, ArrayList<WeightedLink> links){
+    private void simpleWeightMod(ArrayList<String> links){
         for(int i = 0; i < links.size(); i++){
             // We want to weight heavier those links that are close to the goal
             float expFactor = (float)Math.pow(Math.E, (float)(-1 * links.size()) / 8);
-            float weight = (float)(links.size() - i) * expFactor + weightStorage.getPageWeight(links.get(i).getLink());
+            float weight = (float)(links.size() - i) * expFactor + weightStorage.getPageWeight(links.get(i));
             if(Math.abs(weight) > 0.00001){
-                weightStorage.addLink(links.get(i).getLink(), weight);
-//                Set<DefaultWeightedEdge> neighbors = graph.edgesOf(links.get(i));
-//                for(DefaultWeightedEdge edge : neighbors){
-//                    WeightedLink n = graph.getEdgeTarget(edge);
-//                    float neighborWeight = (weight / 2) + weightStorage.getPageWeight(n.getLink());
-//                    if(Math.abs(neighborWeight) > 0.00001){
-//                        weightStorage.addLink(n.getLink(), neighborWeight);
-//                    }
-//                }
+                weightStorage.addLink(links.get(i), weight);
             }
         }
     }
 
-    private void failureMod(Graph<WeightedLink, DefaultWeightedEdge> graph, ArrayList<String> links){
+    private void failureMod(ArrayList<String> links){
         for(String link : links){
             float weight = (weightStorage.getPageWeight(link)) / 2.0f;
             if(Math.abs(weight) > 0.00001){
                 weightStorage.addLink(link, weight);
-//                Set<DefaultWeightedEdge> neighbors = graph.edgesOf(new WeightedLink(link, 0.0f, 0));
-//                for(DefaultWeightedEdge edge : neighbors){
-//                    WeightedLink n = graph.getEdgeTarget(edge);
-//                    float neighborWeight = weightStorage.getPageWeight(n.getLink()) - (weight / 4);
-//                    if(Math.abs(neighborWeight) > 0.00001){
-//                        weightStorage.addLink(n.getLink(), neighborWeight);
-//                    }
-//                }
             }
         }
     }
 
-    private ArrayList<String> getAllCurrentPageLinks(){
-        ArrayList<String> links = new ArrayList<String>();
+    private void getAllCurrentPageLinks(ArrayList<String> links){
         // I'm only interested in links within the content
         WebElement content = browser.findElement(By.id("mw-content-text"));
         // I'm assuming for now that all links will be in <a> tags
-        List<WebElement> tags = content.findElements(By.tagName("a")); // This will probably take forever
+        List<WebElement> tags = content.findElements(By.tagName("a"));
         for(WebElement current : tags){
             String link = current.getAttribute("href");
             if(link != null){
@@ -225,6 +213,6 @@ public class WeightedBestFirstSearch {
                 }
             }
         }
-        return links;
+        tags.clear();
     }
 }
